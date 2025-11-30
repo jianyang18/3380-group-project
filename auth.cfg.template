@@ -1,0 +1,7 @@
+# Database Configuration File
+
+username=your_username_here
+password=your_password_here
+
+# Do NOT commit the auth.cfg file to version control 
+# its already listed in .gitignore

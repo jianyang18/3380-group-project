@@ -1,13 +1,37 @@
-## Project Checklist
+# IMDb Database System
 
-- [ ] Design and finalize schemas.
-- [ ] Create tables on uranium.
-- [ ] Write code to populate the database.
-- [ ] Build the interface (IP).
-  - [ ] complete all levels of menus (may need to add a few simple queries to make db more versitile)
-- [ ] Format results cleanly and add paging.
-- [ ] Prevent SQL injection (double check, test code).
-- [ ] Provide “delete data” and “repopulate data” options.
-- [ ] Demo it on aviary connecting to uranium.
-- [ ] Submit the full project (SQL, code, README, DB credentials).
-- [ ] Write the final report.
+Java command-line application for querying an IMDb movie database.
+
+### Compile and Run
+
+- Make sure sqlite-jdbc.jar file is in the lib/ directory. 
+- Make sure auth.cfg credentials are correct.
+
+```bash
+make compile
+make run
+```
+
+## Project Structure
+
+```
+src/
+ Main.java           # Entry point
+ database/           # DatabaseConfig, DatabaseManager, DatabaseLoader
+ logic/              # TitleQueries, PersonQueries, CharacterQueries, GenreQueries  
+ ui/                 # Interface, MenuSystem, StatisticsDisplay
+ utils/              # ResultFormatter, QueryUtils, InputValidator
+```
+
+## Features
+
+- Search movies, TV shows, actors, characters
+- Complex analytical queries
+- Database statistics and management
+
+---
+**COMP 3380 Group 40**
+- Jian Yang
+- Mohammad Mohid Afzal
+- Mohammad Mujahidul Islam
+
