@@ -1,0 +1,29 @@
+# classes
+*.class
+
+# Package files
+*.jar
+
+# IDE files
+.vscode/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+#logs
+*.log
+
+# Database credentials 
+auth.cfg
+
+# local db files
+resources/imdb.db
+resources/imdb.sql
+
+# bin
+bin/
+
+# lib
+!lib/sqlite-jdbc.jar
+!lib/mssql-jdbc.jar
