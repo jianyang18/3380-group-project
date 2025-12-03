@@ -31,9 +31,7 @@ public class PersonQueries extends QueryHandler {
             // Simple queries
             case 1: searchPersonByName(); break;
             case 2: getPersonDetails(); break;
-            case 3: searchPeopleByProfession(); break;
-            case 4: getActorAge(); break;
-            case 5: viewAllProfessions(); break;
+            case 3: getActorAge(); break;
             
             // Complex queries
             case 10: actorDirectorCollaborations(); break;
@@ -54,6 +52,11 @@ public class PersonQueries extends QueryHandler {
         QueryUtils.printQuerySelection(1, "Search Person by Name");
         System.out.print("Enter person name (partial match allowed): ");
         String personName = scanner.nextLine().trim();
+
+        if (personName.isEmpty()) {
+            System.out.println("Please enter a name to search.\n");
+            return;
+        }
         
         QueryUtils.printResultsHeader("Showing Results For Your Query");
         
@@ -62,7 +65,15 @@ public class PersonQueries extends QueryHandler {
                      "WHERE primaryName LIKE ? " +
                      "ORDER BY primaryName";
         
-        QueryUtils.executeQueryWithParams(conn, sql, formatter, "%" + personName + "%");
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, "%" + personName + "%");
+            try (ResultSet rs = pstmt.executeQuery()) {
+                formatter.displayResultsWithPagination(rs, 10);
+            }
+        } catch (SQLException e) {
+            System.out.println("don't do sql injection");
+            throw e;
+        }
     }
     
     // Query 2: Get detailed information for a specific person by ID
@@ -70,6 +81,11 @@ public class PersonQueries extends QueryHandler {
         System.out.println("You Selected: [2 - Get Person Details (by ID)]");
         System.out.print("Enter Person ID (e.g., nm0000001): ");
         String personID = scanner.nextLine().trim();
+
+        if (personID.isEmpty()) {
+            System.out.println("Please enter a person ID.\n");
+            return;
+        }
         
         System.out.println("\n--- Showing Person Details ---\n");
         
@@ -92,36 +108,23 @@ public class PersonQueries extends QueryHandler {
         }
     }
     
-    // Query 3: Search for people by their profession (e.g., actor, director, writer)
-    private void searchPeopleByProfession() throws SQLException {
-        QueryUtils.printQuerySelection(3, "Search People by Profession");
-        System.out.print("Enter Profession (e.g., actor, director, writer): ");
-        String professionName = scanner.nextLine().trim();
-        
-        QueryUtils.printResultsHeader("Showing People with Profession: " + professionName);
-        
-        String sql = "SELECT DISTINCT p.personID, p.primaryName, p.birthYear, p.deathYear " +
-                     "FROM Person p " +
-                     "JOIN WorksAs w ON p.personID = w.personID " +
-                     "JOIN Profession pr ON w.professionID = pr.professionID " +
-                     "WHERE pr.professionName = ? " +
-                     "ORDER BY p.primaryName";
-        
-        QueryUtils.executeQueryWithParams(conn, sql, formatter, professionName);
-    }
-    
-    // Query 4: Calculate and display age for actors/actresses (living or at time of death)
+    // Query 3: Calculate and display age for actors/actresses (living or at time of death)
     private void getActorAge() throws SQLException {
-        QueryUtils.printQuerySelection(4, "Get Actor/Actress Age");
+        QueryUtils.printQuerySelection(3, "Get Actor/Actress Age");
         System.out.print("Enter Actor/Actress Name (partial match allowed): ");
         String actorName = scanner.nextLine().trim();
+
+        if (actorName.isEmpty()) {
+            System.out.println("Please enter a name.\n");
+            return;
+        }
         
         QueryUtils.printResultsHeader("Showing Age Information");
         
         String sql = "SELECT p.personID, p.primaryName, p.birthYear, p.deathYear, " +
                      "       CASE " +
                      "           WHEN p.deathYear IS NOT NULL THEN p.deathYear - p.birthYear " +
-                     "           WHEN p.birthYear IS NOT NULL THEN CAST(strftime('%Y', 'now') AS INTEGER) - p.birthYear " +
+                     "           WHEN p.birthYear IS NOT NULL THEN YEAR(GETDATE()) - p.birthYear " +
                      "           ELSE NULL " +
                      "       END AS age, " +
                      "       CASE " +
@@ -132,30 +135,32 @@ public class PersonQueries extends QueryHandler {
                      "WHERE p.primaryName LIKE ? " +
                      "ORDER BY p.primaryName";
         
-        QueryUtils.executeQueryWithParams(conn, sql, formatter, "%" + actorName + "%");
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, "%" + actorName + "%");
+            try (ResultSet rs = pstmt.executeQuery()) {
+                formatter.displayResultsWithPagination(rs, 10);
+            }
+        } catch (SQLException e) {
+            System.out.println("don't do sql injection");
+            throw e;
+        }
     }
     
-    // Query 5: View all professions with count of people in each profession
-    private void viewAllProfessions() throws SQLException {
-        QueryUtils.printQuerySelection(5, "View All Professions");
-        QueryUtils.printResultsHeader("Showing All Professions");
-        
-        String sql = "SELECT p.professionID, p.professionName, COUNT(w.personID) AS peopleCount " +
-                     "FROM Profession p " +
-                     "LEFT JOIN WorksAs w ON p.professionID = w.professionID " +
-                     "GROUP BY p.professionID, p.professionName " +
-                     "ORDER BY p.professionName";
-        
-        QueryUtils.executeQuery(conn, sql, formatter);
-    }
-    
+    // Query 4: View all professions with count of people in each profession
     // ==================== COMPLEX QUERIES ====================
     
     // Query 10: Find actor/director pairs with most collaborations
     private void actorDirectorCollaborations() throws SQLException {
         QueryUtils.printQuerySelection(10, "Actor/Director Pairs with Most Collaborations");
         System.out.print("Enter minimum number of collaborations (e.g., 3): ");
-        int minCollabs = Integer.parseInt(scanner.nextLine().trim());
+        String minCollabsInput = scanner.nextLine().trim();
+        int minCollabs;
+        try {
+            minCollabs = Integer.parseInt(minCollabsInput);
+        } catch (NumberFormatException e) {
+            System.out.println("Please enter a valid number.\n");
+            return;
+        }
         
         QueryUtils.printResultsHeader("Top Actor/Director Collaborations");
         
@@ -173,14 +178,29 @@ public class PersonQueries extends QueryHandler {
                      "HAVING COUNT(DISTINCT t.titleID) >= ? " +
                      "ORDER BY collaborationCount DESC";
         
-        QueryUtils.executeQueryWithParams(conn, sql, formatter, minCollabs);
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setInt(1, minCollabs);
+            try (ResultSet rs = pstmt.executeQuery()) {
+                formatter.displayResultsWithPagination(rs, 10);
+            }
+        } catch (SQLException e) {
+            System.out.println("don't do sql injection");
+            throw e;
+        }
     }
     
     // Query 11: Find most prolific actors/actresses by number of titles
     private void topProlificActors() throws SQLException {
         QueryUtils.printQuerySelection(11, "Most Prolific Actors/Actresses");
         System.out.print("Enter number of top actors to display (e.g., 20): ");
-        int topN = Integer.parseInt(scanner.nextLine().trim());
+        String topNInput = scanner.nextLine().trim();
+        int topN;
+        try {
+            topN = Integer.parseInt(topNInput);
+        } catch (NumberFormatException e) {
+            System.out.println("Please enter a valid number.\n");
+            return;
+        }
         
         QueryUtils.printResultsHeader("Top " + topN + " Most Prolific Actors");
         
@@ -193,17 +213,26 @@ public class PersonQueries extends QueryHandler {
                      "JOIN Title t ON pi.titleID = t.titleID " +
                      "GROUP BY p.personID, p.primaryName " +
                      "ORDER BY movieCount DESC " +
-                     "LIMIT ?";
+                     "OFFSET 0 ROWS FETCH NEXT ? ROWS ONLY";
         
-        QueryUtils.executeQueryWithParams(conn, sql, formatter, topN);
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setInt(1, topN);
+            try (ResultSet rs = pstmt.executeQuery()) {
+                formatter.displayResultsWithPagination(rs, 10);
+            }
+        } catch (SQLException e) {
+            System.out.println("don't do sql injection");
+            throw e;
+        }
     }
     
     // Query 12: Find most versatile actors by genre diversity
     private void mostVersatileActors() throws SQLException {
         QueryUtils.printQuerySelection(12, "Most Versatile Actors (By Genre Diversity)");
+        System.out.println("Note: This query may take around 1 minute to run.\n");
         QueryUtils.printResultsHeader("Actors with most genre diversity");
         
-        String sql = "SELECT p.personID, p.primaryName, " +
+        String sql = "SELECT TOP 20 p.personID, p.primaryName, " +
                      "       COUNT(DISTINCT g.genreID) AS genreCount, " +
                      "       COUNT(DISTINCT pi.titleID) AS movieCount " +
                      "FROM Person p " +
@@ -212,17 +241,29 @@ public class PersonQueries extends QueryHandler {
                      "JOIN Genre g ON hg.genreID = g.genreID " +
                      "GROUP BY p.personID, p.primaryName " +
                      "HAVING COUNT(DISTINCT pi.titleID) >= 5 " +
-                     "ORDER BY genreCount DESC, movieCount DESC " +
-                     "LIMIT 20";
+                     "ORDER BY genreCount DESC, movieCount DESC";
         
-        QueryUtils.executeQuery(conn, sql, formatter);
+        try (PreparedStatement pstmt = conn.prepareStatement(sql);
+             ResultSet rs = pstmt.executeQuery()) {
+            formatter.displayResultsWithPagination(rs, 10);
+        } catch (SQLException e) {
+            System.out.println("don't do sql injection");
+            throw e;
+        }
     }
     
     // Query 13: Find one-hit wonders (people with only one highly-rated work)
     private void oneHitWonders() throws SQLException {
         QueryUtils.printQuerySelection(13, "One-Hit Wonders (Actors/Directors)");
         System.out.print("Enter minimum rating for their single work (e.g., 8.0): ");
-        double minRating = Double.parseDouble(scanner.nextLine().trim());
+        String minRatingInput = scanner.nextLine().trim();
+        double minRating;
+        try {
+            minRating = Double.parseDouble(minRatingInput);
+        } catch (NumberFormatException e) {
+            System.out.println("Please enter a valid rating.\n");
+            return;
+        }
         
         QueryUtils.printResultsHeader("One-Hit Wonders");
         
@@ -238,7 +279,15 @@ public class PersonQueries extends QueryHandler {
                      "HAVING COUNT(DISTINCT wa.titleID) = 1 " +
                      "ORDER BY r.averageRating DESC, r.numVotes DESC";
         
-        QueryUtils.executeQueryWithParams(conn, sql, formatter, minRating);
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setDouble(1, minRating);
+            try (ResultSet rs = pstmt.executeQuery()) {
+                formatter.displayResultsWithPagination(rs, 10);
+            }
+        } catch (SQLException e) {
+            System.out.println("don't do sql injection");
+            throw e;
+        }
     }
     
     // Query 14: List all movies featuring a specific actor with character names
@@ -246,6 +295,11 @@ public class PersonQueries extends QueryHandler {
         QueryUtils.printQuerySelection(14, "All Movies by Specific Actor");
         System.out.print("Enter Actor Name (partial match allowed): ");
         String actorName = scanner.nextLine().trim();
+
+        if (actorName.isEmpty()) {
+            System.out.println("Please enter an actor name.\n");
+            return;
+        }
         
         QueryUtils.printResultsHeader("Movies featuring: " + actorName);
         
@@ -260,6 +314,14 @@ public class PersonQueries extends QueryHandler {
                      "WHERE p.primaryName LIKE ? " +
                      "ORDER BY t.startYear DESC, r.averageRating DESC";
         
-        QueryUtils.executeQueryWithParams(conn, sql, formatter, "%" + actorName + "%");
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, "%" + actorName + "%");
+            try (ResultSet rs = pstmt.executeQuery()) {
+                formatter.displayResultsWithPagination(rs, 10);
+            }
+        } catch (SQLException e) {
+            System.out.println("don't do sql injection");
+            throw e;
+        }
     }
 }

@@ -54,7 +54,13 @@ public class GenreQueries extends QueryHandler {
                      "GROUP BY g.genreID, g.genreName " +
                      "ORDER BY g.genreName";
         
-        QueryUtils.executeQuery(conn, sql, formatter);
+        try (PreparedStatement pstmt = conn.prepareStatement(sql);
+             ResultSet rs = pstmt.executeQuery()) {
+            formatter.displayResultsWithPagination(rs, 10);
+        } catch (SQLException e) {
+            System.out.println("don't do sql injection");
+            throw e;
+        }
     }
     
     // ==================== COMPLEX QUERIES ====================
@@ -77,14 +83,26 @@ public class GenreQueries extends QueryHandler {
                      "GROUP BY g.genreName " +
                      "ORDER BY totalRuntime DESC";
         
-        QueryUtils.executeQuery(conn, sql, formatter);
+        try (PreparedStatement pstmt = conn.prepareStatement(sql);
+             ResultSet rs = pstmt.executeQuery()) {
+            formatter.displayResultsWithPagination(rs, 10);
+        } catch (SQLException e) {
+            System.out.println("don't do sql injection");
+            throw e;
+        }
     }
     
     // Query 11: Compare language ratings within a specific region
     private void languageRatingsByRegion() throws SQLException {
         QueryUtils.printQuerySelection(11, "Language Ratings by Region");
+        printAvailableRegionCodes();
         System.out.print("Enter region code (e.g., US, GB, FR): ");
         String region = scanner.nextLine().trim();
+
+        if (region.isEmpty()) {
+            System.out.println("Please enter a region code.\n");
+            return;
+        }
         
         QueryUtils.printResultsHeader("Language ratings for region: " + region);
         
@@ -100,14 +118,40 @@ public class GenreQueries extends QueryHandler {
                      "HAVING COUNT(DISTINCT t.titleID) >= 5 " +
                      "ORDER BY avgRating DESC, titleCount DESC";
         
-        QueryUtils.executeQueryWithParams(conn, sql, formatter, region);
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, region);
+            try (ResultSet rs = pstmt.executeQuery()) {
+                formatter.displayResultsWithPagination(rs, 10);
+            }
+        } catch (SQLException e) {
+            System.out.println("don't do sql injection");
+            throw e;
+        }
+    }
+
+    /**
+     * Display available region codes to guide user input
+     */
+    private void printAvailableRegionCodes() {
+        System.out.println("Common region codes:");
+        System.out.println("US - United States");
+        System.out.println("CA - Canada");
+        System.out.println("CN - China");
+        System.out.println("IN - India");
+        System.out.println();
     }
     
     // Query 12: Find most popular genres for a specific language
     private void popularGenresPerLanguage() throws SQLException {
         QueryUtils.printQuerySelection(12, "Most Popular Genres per Language");
+        printCommonLanguageCodes();
         System.out.print("Enter language code (e.g., en, fr, es): ");
         String language = scanner.nextLine().trim();
+
+        if (language.isEmpty()) {
+            System.out.println("Please enter a language code.\n");
+            return;
+        }
         
         QueryUtils.printResultsHeader("Popular genres in language: " + language);
         
@@ -124,6 +168,25 @@ public class GenreQueries extends QueryHandler {
                      "HAVING COUNT(DISTINCT t.titleID) >= 3 " +
                      "ORDER BY titleCount DESC, avgRating DESC";
         
-        QueryUtils.executeQueryWithParams(conn, sql, formatter, language);
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, language);
+            try (ResultSet rs = pstmt.executeQuery()) {
+                formatter.displayResultsWithPagination(rs, 10);
+            }
+        } catch (SQLException e) {
+            System.out.println("don't do sql injection");
+            throw e;
+        }
+    }
+
+    /**
+     * Display common language codes to guide user input
+     */
+    private void printCommonLanguageCodes() {
+        System.out.println("Common language codes:");
+        System.out.println("en - English");
+        System.out.println("fr - French");
+        System.out.println("es - Spanish");
+        System.out.println();
     }
 }

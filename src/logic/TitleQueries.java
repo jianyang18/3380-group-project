@@ -29,7 +29,7 @@ public class TitleQueries extends QueryHandler {
     protected void executeQuery(int choice) throws SQLException {
         switch (choice) {
             // Simple queries
-            case 1: searchTitleByName(); break;
+            case 1: searchTitlesByActor(); break;
             case 2: getTitleDetails(); break;
             case 3: viewAlternativeTitles(); break;
             case 4: viewAllEpisodes(); break;
@@ -51,27 +51,53 @@ public class TitleQueries extends QueryHandler {
     
     // ==================== SIMPLE QUERIES ====================
     
-    // Query 1: Search for titles by name (partial match)
-    private void searchTitleByName() throws SQLException {
-        QueryUtils.printQuerySelection(1, "Search Title by Name");
-        System.out.print("Enter title name (partial match allowed): ");
-        String titleName = scanner.nextLine().trim();
+    // Query 1: Search for titles by actor/actress name (movies and TV episodes)
+    private void searchTitlesByActor() throws SQLException {
+        QueryUtils.printQuerySelection(1, "Search Title by Actor/Actress name");
+        System.out.print("Enter Actor/Actress Name (partial match allowed): ");
+        String actorName = scanner.nextLine().trim();
+
+        if (actorName.isEmpty()) {
+            System.out.println("Please enter a name.\n");
+            return;
+        }
         
-        QueryUtils.printResultsHeader("Showing Results For Your Query");
+        QueryUtils.printResultsHeader("Showing Titles Featuring: " + actorName);
         
-        String sql = "SELECT titleID, titleType, primaryTitle, startYear, runtimeMinutes " +
-                     "FROM Title " +
-                     "WHERE primaryTitle LIKE ? " +
-                     "ORDER BY startYear DESC, primaryTitle";
+        String sql = "SELECT p.primaryName AS actorName, " +
+                     "       t.primaryTitle AS title, " +
+                     "       t.titleType, " +
+                     "       t.startYear, " +
+                     "       r.averageRating " +
+                     "FROM Person p " +
+                     "JOIN PlayedIn pi ON p.personID = pi.personID " +
+                     "JOIN Title t ON pi.titleID = t.titleID " +
+                     "LEFT JOIN Rating r ON t.titleID = r.titleID " +
+                     "WHERE p.primaryName LIKE ? " +
+                     "  AND t.titleType IN ('movie', 'tvEpisode') " +
+                     "ORDER BY t.startYear DESC, t.primaryTitle";
         
-        QueryUtils.executeQueryWithParams(conn, sql, formatter, "%" + titleName + "%");
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, "%" + actorName + "%");
+            try (ResultSet rs = pstmt.executeQuery()) {
+                formatter.displayResultsWithPagination(rs, 10);
+            }
+        } catch (SQLException e) {
+            System.out.println("don't do sql injection");
+            throw e;
+        }
     }
     
-    // Query 2: Get detailed information for a specific title by ID
+    // Query 2: Get detailed information for titles by movie name (partial match)
     private void getTitleDetails() throws SQLException {
-        System.out.println("You Selected: [2 - Get Title Details (by ID)]");
-        System.out.print("Enter Title ID (e.g., tt0000001): ");
-        String titleID = scanner.nextLine().trim();
+        System.out.println("You Selected: [2 - Get Title Details (by Title)]");
+        System.out.print("Enter Movie Title (partial match allowed): ");
+        String titleName = scanner.nextLine().trim();
+
+        if (titleName.isEmpty()) {
+            System.out.println("Please enter a movie title.\n");
+            return;
+        }
         
         System.out.println("\n--- Showing Title Details ---\n");
         
@@ -80,47 +106,60 @@ public class TitleQueries extends QueryHandler {
                      "       r.averageRating, r.numVotes " +
                      "FROM Title t " +
                      "LEFT JOIN Rating r ON t.titleID = r.titleID " +
-                     "WHERE t.titleID = ?";
+                     "WHERE t.primaryTitle LIKE ? " +
+                     "ORDER BY r.averageRating DESC, t.startYear DESC, t.primaryTitle";
         
         try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            pstmt.setString(1, titleID);
+            pstmt.setString(1, "%" + titleName + "%");
             try (ResultSet rs = pstmt.executeQuery()) {
-                if (rs.next()) {
-                    System.out.println("Title ID: " + rs.getString("titleID"));
-                    System.out.println("Type: " + rs.getString("titleType"));
-                    System.out.println("Title: " + rs.getString("primaryTitle"));
-                    System.out.println("Year: " + rs.getInt("startYear"));
-                    System.out.println("Runtime: " + rs.getInt("runtimeMinutes") + " min");
-                    System.out.println("Rating: " + rs.getDouble("averageRating"));
-                    System.out.println("Votes: " + rs.getInt("numVotes"));
-                } else {
-                    System.out.println("No title found with ID: " + titleID);
-                }
+                formatter.displayResultsWithPagination(rs, 10);
             }
+        } catch (SQLException e) {
+            System.out.println("don't do sql injection");
+            throw e;
         }
     }
     
-    // Query 3: View all alternative titles for a specific title (different regions/languages)
+    // Query 3: View all alternative titles for a movie by title name (different regions/languages)
     private void viewAlternativeTitles() throws SQLException {
         QueryUtils.printQuerySelection(3, "View Alternative Titles");
-        System.out.print("Enter Title ID (e.g., tt0000001): ");
-        String titleID = scanner.nextLine().trim();
+        System.out.print("Enter Movie Title (partial match allowed): ");
+        String titleName = scanner.nextLine().trim();
+
+        if (titleName.isEmpty()) {
+            System.out.println("Please enter a movie title.\n");
+            return;
+        }
         
         QueryUtils.printResultsHeader("Showing Alternative Titles");
         
-        String sql = "SELECT ordering, title, region, language, isOriginalTitle " +
-                     "FROM AlternativeTitle " +
-                     "WHERE titleID = ? " +
-                     "ORDER BY ordering";
+        String sql = "SELECT t.primaryTitle, at.ordering, at.title, at.region, at.language, at.isOriginalTitle " +
+                     "FROM AlternativeTitle at " +
+                     "JOIN Title t ON at.titleID = t.titleID " +
+                     "WHERE t.titleType = 'movie' AND t.primaryTitle LIKE ? " +
+                     "ORDER BY t.primaryTitle, at.ordering";
         
-        QueryUtils.executeQueryWithParams(conn, sql, formatter, titleID);
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, "%" + titleName + "%");
+            try (ResultSet rs = pstmt.executeQuery()) {
+                formatter.displayResultsWithPagination(rs, 10);
+            }
+        } catch (SQLException e) {
+            System.out.println("don't do sql injection");
+            throw e;
+        }
     }
     
     // Query 4: View all episodes of a TV series ordered by season and episode number
     private void viewAllEpisodes() throws SQLException {
         QueryUtils.printQuerySelection(4, "View All Episodes of a Series");
-        System.out.print("Enter Series Title ID (e.g., tt0000001): ");
-        String seriesID = scanner.nextLine().trim();
+        System.out.print("Enter Series Name (partial match allowed): ");
+        String seriesName = scanner.nextLine().trim();
+
+        if (seriesName.isEmpty()) {
+            System.out.println("Please enter a series name.\n");
+            return;
+        }
         
         QueryUtils.printResultsHeader("Showing All Episodes");
         
@@ -129,10 +168,19 @@ public class TitleQueries extends QueryHandler {
                      "FROM Episode e " +
                      "JOIN Title t ON e.titleID = t.titleID " +
                      "LEFT JOIN Rating r ON e.titleID = r.titleID " +
-                     "WHERE e.parentSeriesID = ? " +
+                     "JOIN Title s ON e.parentSeriesID = s.titleID " +
+                     "WHERE s.primaryTitle LIKE ? " +
                      "ORDER BY e.seasonNumber, e.episodeNumber";
         
-        QueryUtils.executeQueryWithParams(conn, sql, formatter, seriesID);
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, "%" + seriesName + "%");
+            try (ResultSet rs = pstmt.executeQuery()) {
+                formatter.displayResultsWithPagination(rs, 10);
+            }
+        } catch (SQLException e) {
+            System.out.println("don't do sql injection");
+            throw e;
+        }
     }
     
     // Query 5: Search for titles by genre name
@@ -140,6 +188,11 @@ public class TitleQueries extends QueryHandler {
         QueryUtils.printQuerySelection(5, "Search Titles by Genre");
         System.out.print("Enter Genre Name (e.g., Drama, Comedy, Action): ");
         String genreName = scanner.nextLine().trim();
+
+        if (genreName.isEmpty()) {
+            System.out.println("Please enter a genre.\n");
+            return;
+        }
         
         QueryUtils.printResultsHeader("Showing Titles in Genre: " + genreName);
         
@@ -151,7 +204,15 @@ public class TitleQueries extends QueryHandler {
                      "WHERE g.genreName = ? " +
                      "ORDER BY r.averageRating DESC, t.primaryTitle";
         
-        QueryUtils.executeQueryWithParams(conn, sql, formatter, genreName);
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, genreName);
+            try (ResultSet rs = pstmt.executeQuery()) {
+                formatter.displayResultsWithPagination(rs, 10);
+            }
+        } catch (SQLException e) {
+            System.out.println("don't do sql injection");
+            throw e;
+        }
     }
     
     // Query 6: Search for titles within a specific year range
@@ -159,10 +220,19 @@ public class TitleQueries extends QueryHandler {
         System.out.println("You Selected: [6 - Search Titles by Year Range]");
         
         System.out.print("Enter Start Year (e.g., 2000): ");
-        int startYear = Integer.parseInt(scanner.nextLine().trim());
-        
+        String startYearInput = scanner.nextLine().trim();
         System.out.print("Enter End Year (e.g., 2020): ");
-        int endYear = Integer.parseInt(scanner.nextLine().trim());
+        String endYearInput = scanner.nextLine().trim();
+        
+        int startYear;
+        int endYear;
+        try {
+            startYear = Integer.parseInt(startYearInput);
+            endYear = Integer.parseInt(endYearInput);
+        } catch (NumberFormatException e) {
+            System.out.println("Please enter valid numeric years.\n");
+            return;
+        }
         
         if (startYear > endYear) {
             System.out.println("Error: Start year must be <= end year.\n");
@@ -183,6 +253,9 @@ public class TitleQueries extends QueryHandler {
             try (ResultSet rs = pstmt.executeQuery()) {
                 formatter.displayResultsWithPagination(rs, 10);
             }
+        } catch (SQLException e) {
+            System.out.println("don't do sql injection");
+            throw e;
         }
     }
     
@@ -199,21 +272,29 @@ public class TitleQueries extends QueryHandler {
         
         QueryUtils.printResultsHeader("Hidden Gems (high rating, low votes)");
         
-        String sql = "SELECT t.titleID, t.primaryTitle, t.startYear, " +
+        String sql = "SELECT TOP 20 t.titleID, t.primaryTitle, t.startYear, " +
                      "       r.averageRating, r.numVotes " +
                      "FROM Title t " +
                      "JOIN Rating r ON t.titleID = r.titleID " +
                      "WHERE r.averageRating >= ? AND r.numVotes <= ? " +
-                     "ORDER BY r.averageRating DESC, r.numVotes ASC " +
-                     "LIMIT 20";
+                     "ORDER BY r.averageRating DESC, r.numVotes ASC";
         
-        QueryUtils.executeQueryWithParams(conn, sql, formatter, minRating, maxVotes);
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setDouble(1, minRating);
+            pstmt.setInt(2, maxVotes);
+            try (ResultSet rs = pstmt.executeQuery()) {
+                formatter.displayResultsWithPagination(rs, 10);
+            }
+        } catch (SQLException e) {
+            System.out.println("don't do sql injection");
+            throw e;
+        }
     }
     
     // Query 11: Compare global titles (many regional versions) vs regional titles (few versions)
     private void globalVsRegionalTitles() throws SQLException {
-        QueryUtils.printQuerySelection(11, "Global vs Regional Title Performance");
-        QueryUtils.printResultsHeader("Comparing titles with many vs few regional versions");
+        QueryUtils.printQuerySelection(11, "Regional Reach vs Ratings & Popularity");
+        QueryUtils.printResultsHeader("Correlation of regional reach with rating and votes");
         
         String sql = "SELECT t.titleID, t.primaryTitle, " +
                      "       COUNT(DISTINCT at.region) AS regionCount, " +
@@ -229,7 +310,13 @@ public class TitleQueries extends QueryHandler {
                      "HAVING COUNT(DISTINCT at.region) > 0 " +
                      "ORDER BY regionCount DESC, r.averageRating DESC";
         
-        QueryUtils.executeQuery(conn, sql, formatter);
+        try (PreparedStatement pstmt = conn.prepareStatement(sql);
+             ResultSet rs = pstmt.executeQuery()) {
+            formatter.displayResultsWithPagination(rs, 10);
+        } catch (SQLException e) {
+            System.out.println("don't do sql injection");
+            throw e;
+        }
     }
     
     // Query 12: Analyze rating trends for a specific genre across decades
@@ -237,6 +324,11 @@ public class TitleQueries extends QueryHandler {
         QueryUtils.printQuerySelection(12, "Genre Rating Trends by Decade");
         System.out.print("Enter genre (e.g., Drama, Action): ");
         String genre = scanner.nextLine().trim();
+
+        if (genre.isEmpty()) {
+            System.out.println("Please enter a genre.\n");
+            return;
+        }
         
         QueryUtils.printResultsHeader("Rating trends for " + genre + " by decade");
         
@@ -253,7 +345,15 @@ public class TitleQueries extends QueryHandler {
                      "GROUP BY (t.startYear / 10) * 10 " +
                      "ORDER BY decade DESC";
         
-        QueryUtils.executeQueryWithParams(conn, sql, formatter, genre);
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, genre);
+            try (ResultSet rs = pstmt.executeQuery()) {
+                formatter.displayResultsWithPagination(rs, 10);
+            }
+        } catch (SQLException e) {
+            System.out.println("don't do sql injection");
+            throw e;
+        }
     }
     
     // Query 13: Find TV shows with most consistent episode ratings (low variance)
@@ -273,7 +373,13 @@ public class TitleQueries extends QueryHandler {
                      "HAVING COUNT(e.titleID) >= 10 " +
                      "ORDER BY ratingRange ASC, avgRating DESC";
         
-        QueryUtils.executeQuery(conn, sql, formatter);
+        try (PreparedStatement pstmt = conn.prepareStatement(sql);
+             ResultSet rs = pstmt.executeQuery()) {
+            formatter.displayResultsWithPagination(rs, 10);
+        } catch (SQLException e) {
+            System.out.println("don't do sql injection");
+            throw e;
+        }
     }
     
     // Query 14: Rank countries by total movie releases and average rating
@@ -292,16 +398,27 @@ public class TitleQueries extends QueryHandler {
                      "HAVING COUNT(DISTINCT t.titleID) >= 5 " +
                      "ORDER BY movieCount DESC, avgRating DESC";
         
-        QueryUtils.executeQuery(conn, sql, formatter);
+        try (PreparedStatement pstmt = conn.prepareStatement(sql);
+             ResultSet rs = pstmt.executeQuery()) {
+            formatter.displayResultsWithPagination(rs, 10);
+        } catch (SQLException e) {
+            System.out.println("don't do sql injection");
+            throw e;
+        }
     }
     
-    // Query 15: Analyze TV series season performance vs number of writers
+    // Query 15: Search ratings per season and writer totals for a TV series
     private void seasonRatingsVsWriters() throws SQLException {
-        QueryUtils.printQuerySelection(15, "TV Series: Season Ratings vs Writer Count");
-        System.out.print("Enter TV Series ID (e.g., tt0000001): ");
-        String seriesID = scanner.nextLine().trim();
+        QueryUtils.printQuerySelection(15, "Season Ratings & Writers by TV Series Title");
+        System.out.print("Enter TV Series Title (partial match allowed): ");
+        String seriesTitle = scanner.nextLine().trim();
+
+        if (seriesTitle.isEmpty()) {
+            System.out.println("Please enter a series title.\n");
+            return;
+        }
         
-        QueryUtils.printResultsHeader("Season performance vs writer count");
+        QueryUtils.printResultsHeader("Ratings and writer totals by season");
         
         String sql = "SELECT e.seasonNumber, " +
                      "       COUNT(DISTINCT e.titleID) AS episodeCount, " +
@@ -310,11 +427,20 @@ public class TitleQueries extends QueryHandler {
                      "FROM Episode e " +
                      "LEFT JOIN Rating r ON e.titleID = r.titleID " +
                      "LEFT JOIN WorksAs wa ON e.titleID = wa.titleID " +
-                     "LEFT JOIN Profession p ON wa.professionID = p.professionID " +
-                     "WHERE e.parentSeriesID = ? AND p.professionName = 'writer' " +
+                     "LEFT JOIN Profession p ON wa.professionID = p.professionID AND p.professionName = 'writer' " +
+                     "JOIN Title s ON e.parentSeriesID = s.titleID " +
+                     "WHERE s.titleType = 'tvSeries' AND s.primaryTitle LIKE ? " +
                      "GROUP BY e.seasonNumber " +
                      "ORDER BY e.seasonNumber";
         
-        QueryUtils.executeQueryWithParams(conn, sql, formatter, seriesID);
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, "%" + seriesTitle + "%");
+            try (ResultSet rs = pstmt.executeQuery()) {
+                formatter.displayResultsWithPagination(rs, 10);
+            }
+        } catch (SQLException e) {
+            System.out.println("don't do sql injection");
+            throw e;
+        }
     }
 }

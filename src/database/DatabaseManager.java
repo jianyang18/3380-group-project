@@ -1,6 +1,10 @@
 package database;
 
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.Scanner;
 import ui.MenuSystem;
 import utils.InputValidator;
@@ -13,6 +17,7 @@ import utils.QueryUtils;
 public class DatabaseManager {
     private Connection conn;
     private Scanner scanner;
+    private static final String POPULATION_SCRIPT = "resources/create_smaller_db.sql";
     
     public DatabaseManager(Connection conn, Scanner scanner) {
         this.conn = conn;
@@ -93,14 +98,9 @@ public class DatabaseManager {
         
         System.out.println("\nDeleting all data from database...");
         
-        // Disable foreign key checks temporarily
-        Statement stmt = conn.createStatement();
-        stmt.execute("SET FOREIGN_KEY_CHECKS = 0");
-        
-        // List of all tables to truncate in order to handle dependencies
+        // Deletion order is child tables first to satisfy FK constraints on SQL Server
         String[] tables = {
             "Rating",
-            "KnownFor",
             "PlayedIn",
             "WorksAs",
             "HasGenre",
@@ -115,18 +115,16 @@ public class DatabaseManager {
         
         int tablesCleared = 0;
         for (String table : tables) {
-            try {
-                stmt.execute("DELETE FROM " + table);
+            String sql = "DELETE FROM " + table;
+            try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+                pstmt.executeUpdate();
                 tablesCleared++;
                 System.out.println("  - Cleared table: " + table);
             } catch (SQLException e) {
+                System.out.println("don't do sql injection");
                 System.out.println("  - Warning: Could not clear " + table + " (" + e.getMessage() + ")");
             }
         }
-        
-        // Re-enable foreign key checks
-        stmt.execute("SET FOREIGN_KEY_CHECKS = 1");
-        stmt.close();
         
         System.out.println("\nDatabase wipe complete! " + tablesCleared + " tables cleared.");
         QueryUtils.waitForEnter(scanner);
@@ -152,34 +150,25 @@ public class DatabaseManager {
         
         System.out.println("\nResetting database...");
         
-        // First, wipe all existing data
-        Statement stmt = conn.createStatement();
-        stmt.execute("SET FOREIGN_KEY_CHECKS = 0");
-        
+        // Drop existing tables so the population script can recreate them cleanly
         String[] tables = {
-            "Rating", "KnownFor", "PlayedIn", "WorksAs", "HasGenre", "Episode", 
+            "Rating", "PlayedIn", "WorksAs", "HasGenre", "Episode", 
             "AlternativeTitle", "Title", "Character", "Person", "Genre", "Profession"
         };
         
-        for (String table : tables) {
-            try {
-                stmt.execute("DELETE FROM " + table);
-            } catch (SQLException e) {
-                // Continue even if deletion fails
-            }
+        dropTablesInAnySchema(tables);
+        
+        System.out.println("  - Existing tables dropped (where present)");
+        
+        // Repopulate database from default population script
+        System.out.println("  - Repopulating database from " + POPULATION_SCRIPT + " ...");
+        printDurationNotice();
+        boolean success = DatabaseLoader.loadSqlFile(POPULATION_SCRIPT, conn);
+        if (success) {
+            System.out.println("  - Population script completed.");
+        } else {
+            System.out.println("  - Population script failed. Please check the SQL file and connection.");
         }
-        
-        stmt.execute("SET FOREIGN_KEY_CHECKS = 1");
-        
-        System.out.println("  - All existing data cleared");
-        
-        // TODO: Call the population script/method to repopulate the database
-        
-        System.out.println("  - Repopulating database from source files...");
-        System.out.println("\nNOTE: Population script integration pending.");
-        System.out.println("      Please run the population script separately.");
-        
-        stmt.close();
         
         System.out.println("\nDatabase reset initiated.");
         QueryUtils.waitForEnter(scanner);
@@ -195,59 +184,93 @@ public class DatabaseManager {
         System.out.println("+----------------------------------------------------------------+");
         System.out.println();
         
-        Statement stmt = conn.createStatement();
-        
         // List of tables to check
         String[] tables = {
             "Title", "Person", "Character", "Genre", "Profession",
             "Rating", "Episode", "AlternativeTitle",
-            "PlayedIn","WorksAs", "HasGenre", "KnownFor"
+            "PlayedIn", "WorksAs", "HasGenre"
         };
         
         System.out.printf("%-25s | %15s%n", "Table Name", "Record Count");
         System.out.println("-".repeat(45));
         
         for (String table : tables) {
-            try {
-                ResultSet rs = stmt.executeQuery("SELECT COUNT(*) AS count FROM " + table);
+            String sql = "SELECT COUNT(*) AS count FROM " + table;
+            try (PreparedStatement pstmt = conn.prepareStatement(sql);
+                 ResultSet rs = pstmt.executeQuery()) {
                 if (rs.next()) {
                     int count = rs.getInt("count");
                     System.out.printf("%-25s | %,15d%n", table, count);
                 }
-                rs.close();
             } catch (SQLException e) {
+                System.out.println("don't do sql injection");
                 System.out.printf("%-25s | %15s%n", table, "Error");
             }
         }
         
         System.out.println("-".repeat(45));
         
-        stmt.close();
-        
         QueryUtils.waitForEnter(scanner);
     }
+
+    /**
+     * Drops the given tables regardless of schema (tries all schemas where they exist)
+     */
+    private void dropTablesInAnySchema(String[] tables) {
+        String schemaLookup = "SELECT TABLE_SCHEMA FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = ?";
         
-    /**
-     * Executes a SQL script file to populate the database
-     * @param scriptPath Path to the SQL script file
-     */
-    private void executeSQLScript(String scriptPath) throws SQLException {
-        // TODO
-        System.out.println("Executing script: " + scriptPath);
+        for (String table : tables) {
+            boolean dropped = false;
+            
+            try (PreparedStatement schemaStmt = conn.prepareStatement(schemaLookup)) {
+                schemaStmt.setString(1, table);
+                try (ResultSet rs = schemaStmt.executeQuery()) {
+                    while (rs.next()) {
+                        String schema = rs.getString(1);
+                        String fqName = "[" + schema + "].[" + table + "]";
+                        try (Statement dropStmt = conn.createStatement()) {
+                            dropStmt.executeUpdate("DROP TABLE " + fqName);
+                            System.out.println("  - Dropped table: " + fqName);
+                            dropped = true;
+                        } catch (SQLException e) {
+                            System.out.println("  - Warning: Could not drop " + fqName + " (" + e.getMessage() + ")");
+                        }
+                    }
+                }
+            } catch (SQLException e) {
+                System.out.println("  - Warning: Error looking up schema for " + table + " (" + e.getMessage() + ")");
+            }
+            
+            // Fallback to default schema if none were found
+            if (!dropped) {
+                String fallbackDrop = "IF OBJECT_ID('" + table + "', 'U') IS NOT NULL DROP TABLE " + table;
+                try (Statement dropStmt = conn.createStatement()) {
+                    dropStmt.executeUpdate(fallbackDrop);
+                    System.out.println("  - Dropped table: " + table);
+                } catch (SQLException e) {
+                    System.out.println("  - Warning: Could not drop " + table + " (" + e.getMessage() + ")");
+                }
+            }
+        }
     }
-    
+
     /**
-     * Creates a backup of the current database state
+     * Print a prominent notice about population duration
      */
-    public void createBackup() throws SQLException {
-        // TODO
-    }
-    
-    /**
-     * Restores database from a backup file
-     * @param backupPath Path to the backup file
-     */
-    public void restoreFromBackup(String backupPath) throws SQLException {
-        // TODO
+    private void printDurationNotice() {
+        String[] lines = {
+            "The database is quite big; repopulate may take 5-10 mins.",
+            "Please wait until the process completes."
+        };
+        int maxLen = 0;
+        for (String line : lines) {
+            maxLen = Math.max(maxLen, line.length());
+        }
+        String horizontal = "+" + "-".repeat(maxLen + 4) + "+";
+        System.out.println(horizontal);
+        for (String line : lines) {
+            System.out.printf("| %-"+ maxLen + "s |%n", line);
+        }
+        System.out.println(horizontal);
     }
 }

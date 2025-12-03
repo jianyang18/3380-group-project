@@ -11,8 +11,8 @@ import java.util.Scanner;
  */
 public class ResultFormatter {
     private static final int DEFAULT_PAGE_SIZE = 10;
-    private static final int MAX_COLUMN_WIDTH = 50;
-    private static final int MIN_COLUMN_WIDTH = 10;
+    private static final int MAX_COLUMN_WIDTH = 25;
+    private static final int MIN_COLUMN_WIDTH = 6;
     
     private Scanner scanner;
     
@@ -300,6 +300,9 @@ public class ResultFormatter {
         }
         if (str.length() <= maxWidth) {
             return str;
+        }
+        if (maxWidth <= 3) {
+            return str.substring(0, Math.max(0, maxWidth));
         }
         return str.substring(0, maxWidth - 3) + "...";
     }

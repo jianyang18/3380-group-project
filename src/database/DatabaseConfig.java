@@ -14,7 +14,7 @@ import java.util.Properties;
  */
 public class DatabaseConfig {
     
-    private static final boolean USE_LOCAL_SQLITE = true;  // Set to false for uranium server
+    private static final boolean USE_LOCAL_SQLITE = false;  // Set to false for uranium server
     
     // Local SQLite database path
     private static final String SQLITE_DB_PATH = "resources/imdb.db";
@@ -116,7 +116,7 @@ public class DatabaseConfig {
         String password = credentials.getProperty("password");
         
         String connectionUrl = "jdbc:sqlserver://" + DB_HOST + ":" + DB_PORT + ";" +
-                             "database=" + databaseName + ";" +
+                             "databaseName=" + databaseName + ";" +
                              "user=" + username + ";" +
                              "password=" + password + ";" +
                              "encrypt=false;" +
@@ -124,8 +124,12 @@ public class DatabaseConfig {
                              "loginTimeout=30;";
         
         try {
+            Class.forName("com.microsoft.sqlserver.jdbc.SQLServerDriver");
             Connection conn = DriverManager.getConnection(connectionUrl);
             return conn;
+        } catch (ClassNotFoundException e) {
+            System.err.println("SQL Server JDBC driver not found! Ensure mssql-jdbc.jar is on the classpath.");
+            return null;
         } catch (SQLException e) {
             System.err.println("Database connection error: " + e.getMessage());
             System.err.println("\nTroubleshooting:");

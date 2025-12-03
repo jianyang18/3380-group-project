@@ -3,22 +3,26 @@
 ## 3-Layer Design
 
 ### Presentation (`ui/`)
+
 - Interface - Main UI coordinator
 - MenuSystem - Menu displays
 - StatisticsDisplay - Database stats
 
-### Business Logic (`logic/`)
+### Logic (`logic/`)
+
 - TitleQueries - Movie/TV queries
 - PersonQueries - Actor/director queries
-- CharacterQueries - Character queries  
+- CharacterQueries - Character queries
 - GenreQueries - Genre/statistics queries
 
-### Data Access (`database/`)
+### Data (`database/`)
+
 - DatabaseConfig - Connection management
 - DatabaseManager - DB operations
 - DatabaseLoader - SQL loading
 
 ### Utilities (`utils/`)
+
 - ResultFormatter - Pagination & formatting
 - QueryUtils - Shared helpers
 - InputValidator - Input validation

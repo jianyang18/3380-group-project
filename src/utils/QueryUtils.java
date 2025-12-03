@@ -75,6 +75,9 @@ public class QueryUtils {
             try (ResultSet rs = pstmt.executeQuery()) {
                 formatter.displayResultsWithPagination(rs, 10);
             }
+        } catch (SQLException e) {
+            System.out.println("don't do sql injection");
+            throw e;
         }
     }
     
@@ -87,6 +90,9 @@ public class QueryUtils {
         try (PreparedStatement pstmt = conn.prepareStatement(sql);
              ResultSet rs = pstmt.executeQuery()) {
             formatter.displayResultsWithPagination(rs, 10);
+        } catch (SQLException e) {
+            System.out.println("don't do sql injection");
+            throw e;
         }
     }
 }

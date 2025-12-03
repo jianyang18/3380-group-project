@@ -92,8 +92,8 @@ public class DatabaseLoader {
     
     public static void main(String[] args) {
         if (args.length != 1) {
-            System.out.println("Usage: java utils.DatabaseLoade <sql_file_path>");
-            System.out.println("Example: java utils.DatabaseLoade create_smaller_db.sql");
+            System.out.println("Usage: java database.DatabaseLoader <sql_file_path>");
+            System.out.println("Example: java database.DatabaseLoader resources/create_smaller_db.sql");
             return;
         }
         

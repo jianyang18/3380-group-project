@@ -47,6 +47,11 @@ public class CharacterQueries extends QueryHandler {
         QueryUtils.printQuerySelection(1, "Search Character by Name");
         System.out.print("Enter character name (partial match allowed): ");
         String characterName = scanner.nextLine().trim();
+
+        if (characterName.isEmpty()) {
+            System.out.println("Please enter a character name.\n");
+            return;
+        }
         
         QueryUtils.printResultsHeader("Showing Results For Your Query");
         
@@ -55,7 +60,15 @@ public class CharacterQueries extends QueryHandler {
                      "WHERE characterName LIKE ? " +
                      "ORDER BY characterName";
         
-        QueryUtils.executeQueryWithParams(conn, sql, formatter, "%" + characterName + "%");
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, "%" + characterName + "%");
+            try (ResultSet rs = pstmt.executeQuery()) {
+                formatter.displayResultsWithPagination(rs, 10);
+            }
+        } catch (SQLException e) {
+            System.out.println("don't do sql injection");
+            throw e;
+        }
     }
     
     // Query 2: Find all actors who played a specific character across different titles
@@ -63,6 +76,11 @@ public class CharacterQueries extends QueryHandler {
         QueryUtils.printQuerySelection(2, "Who Has Played This Character?");
         System.out.print("Enter Character Name (partial match allowed): ");
         String characterName = scanner.nextLine().trim();
+
+        if (characterName.isEmpty()) {
+            System.out.println("Please enter a character name.\n");
+            return;
+        }
         
         QueryUtils.printResultsHeader("Showing Actors Who Played: " + characterName);
         
@@ -75,7 +93,15 @@ public class CharacterQueries extends QueryHandler {
                      "WHERE c.characterName LIKE ? " +
                      "ORDER BY c.characterName, t.startYear DESC, p.primaryName";
         
-        QueryUtils.executeQueryWithParams(conn, sql, formatter, "%" + characterName + "%");
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, "%" + characterName + "%");
+            try (ResultSet rs = pstmt.executeQuery()) {
+                formatter.displayResultsWithPagination(rs, 10);
+            }
+        } catch (SQLException e) {
+            System.out.println("don't do sql injection");
+            throw e;
+        }
     }
     
     // ==================== COMPLEX QUERIES ====================
@@ -84,7 +110,14 @@ public class CharacterQueries extends QueryHandler {
     private void mostPortrayedCharacters() throws SQLException {
         QueryUtils.printQuerySelection(10, "Most Portrayed Characters");
         System.out.print("Enter minimum number of actors (e.g., 3): ");
-        int minActors = Integer.parseInt(scanner.nextLine().trim());
+        String minActorsInput = scanner.nextLine().trim();
+        int minActors;
+        try {
+            minActors = Integer.parseInt(minActorsInput);
+        } catch (NumberFormatException e) {
+            System.out.println("Please enter a valid number.\n");
+            return;
+        }
         
         QueryUtils.printResultsHeader("Characters portrayed by " + minActors + "+ actors");
         
@@ -97,6 +130,14 @@ public class CharacterQueries extends QueryHandler {
                      "HAVING COUNT(DISTINCT pi.personID) >= ? " +
                      "ORDER BY actorCount DESC, titleCount DESC";
         
-        QueryUtils.executeQueryWithParams(conn, sql, formatter, minActors);
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setInt(1, minActors);
+            try (ResultSet rs = pstmt.executeQuery()) {
+                formatter.displayResultsWithPagination(rs, 10);
+            }
+        } catch (SQLException e) {
+            System.out.println("don't do sql injection");
+            throw e;
+        }
     }
 }

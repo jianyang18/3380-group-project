@@ -44,18 +44,6 @@ GROUP BY g.genreID, g.genreName
 ORDER BY g.genreName;
 
 -- ---------------------------------------------------------------------------
--- QUERY 5: View All Professions
--- Purpose: List all professions with count of people in each
--- Tables Used: Profession, WorksAs
--- User Input: None
--- ---------------------------------------------------------------------------
-SELECT p.professionID, p.professionName, COUNT(w.personID) AS peopleCount
-FROM Profession p
-LEFT JOIN WorksAs w ON p.professionID = w.professionID
-GROUP BY p.professionID, p.professionName
-ORDER BY p.professionName;
-
--- ---------------------------------------------------------------------------
 -- QUERY 6: Get Title Details
 -- Purpose: Retrieve comprehensive details for a specific title by ID
 -- Tables Used: Title, Rating, HasGenre, Genre
@@ -146,20 +134,6 @@ LEFT JOIN Rating r ON t.titleID = r.titleID
 WHERE t.startYear BETWEEN ? AND ?
 ORDER BY t.startYear DESC, r.averageRating DESC;
 
--- ---------------------------------------------------------------------------
--- QUERY 12: Search People by Profession
--- Purpose: Find all people who work in a specific profession
--- Tables Used: Person, WorksAs, Profession
--- User Input: profession name (string, exact match)
--- ---------------------------------------------------------------------------
-SELECT DISTINCT p.personID, p.primaryName, p.birthYear, p.deathYear
-FROM Person p
-JOIN WorksAs w ON p.personID = w.personID
-JOIN Profession pr ON w.professionID = pr.professionID
-WHERE pr.professionName = ?
-ORDER BY p.primaryName;
-
--- ---------------------------------------------------------------------------
 -- QUERY 13: Get Actor/Actress Age
 -- Purpose: Calculate current age or age at death for actors/actresses
 -- Tables Used: Person
