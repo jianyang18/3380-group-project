@@ -47,52 +47,52 @@ public class QueryUtils {
         System.out.println("\n--- " + headerText + " ---\n");
     }
     
-    /**
-     * Execute a parameterized query and display paginated results
-     * @param conn Database connection
-     * @param sql SQL query with placeholders
-     * @param formatter Result formatter for displaying results
-     * @param params Parameters to bind to the query
-     */
-    public static void executeQueryWithParams(Connection conn, String sql, 
-                                              ResultFormatter formatter, 
-                                              Object... params) throws SQLException {
-        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            // Bind parameters
-            for (int i = 0; i < params.length; i++) {
-                Object param = params[i];
-                if (param instanceof String) {
-                    pstmt.setString(i + 1, (String) param);
-                } else if (param instanceof Integer) {
-                    pstmt.setInt(i + 1, (Integer) param);
-                } else if (param instanceof Double) {
-                    pstmt.setDouble(i + 1, (Double) param);
-                } else if (param instanceof Long) {
-                    pstmt.setLong(i + 1, (Long) param);
-                }
-            }
+    // /**
+    //  * Execute a parameterized query and display paginated results
+    //  * @param conn Database connection
+    //  * @param sql SQL query with placeholders
+    //  * @param formatter Result formatter for displaying results
+    //  * @param params Parameters to bind to the query
+    //  */
+    // public static void executeQueryWithParams(Connection conn, String sql, 
+    //                                           ResultFormatter formatter, 
+    //                                           Object... params) throws SQLException {
+    //     try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+    //         // Bind parameters
+    //         for (int i = 0; i < params.length; i++) {
+    //             Object param = params[i];
+    //             if (param instanceof String) {
+    //                 pstmt.setString(i + 1, (String) param);
+    //             } else if (param instanceof Integer) {
+    //                 pstmt.setInt(i + 1, (Integer) param);
+    //             } else if (param instanceof Double) {
+    //                 pstmt.setDouble(i + 1, (Double) param);
+    //             } else if (param instanceof Long) {
+    //                 pstmt.setLong(i + 1, (Long) param);
+    //             }
+    //         }
             
-            try (ResultSet rs = pstmt.executeQuery()) {
-                formatter.displayResultsWithPagination(rs, 10);
-            }
-        } catch (SQLException e) {
-            System.out.println("don't do sql injection");
-            throw e;
-        }
-    }
+    //         try (ResultSet rs = pstmt.executeQuery()) {
+    //             formatter.displayResultsWithPagination(rs, 10);
+    //         }
+    //     } catch (SQLException e) {
+    //         System.out.println("don't do sql injection");
+    //         throw e;
+    //     }
+    // }
     
-    /**
-     * Execute a query without parameters and display paginated results
-     * Use this for queries with no user input (safe from SQL injection)
-     */
-    public static void executeQuery(Connection conn, String sql, 
-                                   ResultFormatter formatter) throws SQLException {
-        try (PreparedStatement pstmt = conn.prepareStatement(sql);
-             ResultSet rs = pstmt.executeQuery()) {
-            formatter.displayResultsWithPagination(rs, 10);
-        } catch (SQLException e) {
-            System.out.println("don't do sql injection");
-            throw e;
-        }
-    }
+    // /**
+    //  * Execute a query without parameters and display paginated results
+    //  * Use this for queries with no user input (safe from SQL injection)
+    //  */
+    // public static void executeQuery(Connection conn, String sql, 
+    //                                ResultFormatter formatter) throws SQLException {
+    //     try (PreparedStatement pstmt = conn.prepareStatement(sql);
+    //          ResultSet rs = pstmt.executeQuery()) {
+    //         formatter.displayResultsWithPagination(rs, 10);
+    //     } catch (SQLException e) {
+    //         System.out.println("don't do sql injection");
+    //         throw e;
+    //     }
+    // }
 }

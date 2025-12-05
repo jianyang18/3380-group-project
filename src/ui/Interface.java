@@ -48,7 +48,7 @@ public class Interface {
                     break;
             }
         }
-        System.out.println("\nThank you for using IMDb Database System!");
+        System.out.println("\nThank you for using our IMDb Database System!");
         System.out.println("Goodbye.\n");
     }
 

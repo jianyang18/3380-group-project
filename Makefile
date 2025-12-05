@@ -26,7 +26,7 @@ compile:
 	@echo "Compilation complete!"
 
 # Run the application
-run:
+run: compile
 	@echo "Starting IMDb Database System..."
 	$(JAVA) -cp $(CLASSPATH) $(MAIN_CLASS)
 
