@@ -147,6 +147,8 @@ public class PersonQueries extends QueryHandler {
     }
     
     // Query 4: View all professions with count of people in each profession
+
+    
     // ==================== COMPLEX QUERIES ====================
     
     // Query 10: Find actor/director pairs with most collaborations
@@ -163,6 +165,7 @@ public class PersonQueries extends QueryHandler {
         }
         
         QueryUtils.printResultsHeader("Top Actor/Director Collaborations");
+        System.out.println("[This query may take around 10-15 seconds, please wait...]");
         
         String sql = "SELECT actor.primaryName AS actorName, " +
                      "       director.primaryName AS directorName, " +
@@ -231,6 +234,8 @@ public class PersonQueries extends QueryHandler {
         QueryUtils.printQuerySelection(12, "Most Versatile Actors (By Genre Diversity)");
         System.out.println("Note: This query may take around 1 minute to run.\n");
         QueryUtils.printResultsHeader("Actors with most genre diversity");
+        System.out.println("[This query may take around 1 minute, please wait...]");
+        
         
         String sql = "SELECT TOP 20 p.personID, p.primaryName, " +
                      "       COUNT(DISTINCT g.genreID) AS genreCount, " +
@@ -255,6 +260,8 @@ public class PersonQueries extends QueryHandler {
     // Query 13: Find one-hit wonders (people with only one highly-rated work)
     private void oneHitWonders() throws SQLException {
         QueryUtils.printQuerySelection(13, "One-Hit Wonders (Actors/Directors)");
+        System.out.println("\n[Definiton of One-hit wonder: people with only one credited work, and");
+        System.out.println(" that single work meets the minimum rating you enter]\n");
         System.out.print("Enter minimum rating for their single work (e.g., 8.0): ");
         String minRatingInput = scanner.nextLine().trim();
         double minRating;
@@ -266,6 +273,9 @@ public class PersonQueries extends QueryHandler {
         }
         
         QueryUtils.printResultsHeader("One-Hit Wonders");
+        System.out.println("[This query may take around 30 seconds, please wait...]\n");
+        
+
         
         String sql = "SELECT p.personID, p.primaryName, " +
                      "       t.primaryTitle, t.startYear, " +

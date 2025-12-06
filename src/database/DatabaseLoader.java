@@ -9,10 +9,6 @@ import java.sql.Statement;
 
 /**
  * database population utility
- * 
- * Loads SQL files with GO batch separators for SQL Server
- * optimized loader for quick database repopulation
- * 
  */
 public class DatabaseLoader {
 
@@ -40,6 +36,7 @@ public class DatabaseLoader {
                 String trimmed = line.trim();
 
                 // Skip comments and empty lines
+                // NOTE: -- is comments in the sql file
                 if (trimmed.startsWith("--") || trimmed.isEmpty()) {
                     continue;
                 }
@@ -53,7 +50,7 @@ public class DatabaseLoader {
                             stmt.execute(command.toString());
                             batchCount++;
                             
-                            // Progress indicator
+                            // Progress indicator (so the user knows it's still populating)
                             System.out.print(".");
                             if (lineCount % 1000 == 0) {
                                 System.out.println(" (" + lineCount + " lines, " + batchCount + " batches)");
@@ -61,7 +58,6 @@ public class DatabaseLoader {
                         } catch (SQLException e) {
                             System.out.println("\nError executing batch at line " + lineCount + ":");
                             System.out.println(e.getMessage());
-                            // Continue on error - some failures might be expected (e.g., DROP IF EXISTS)
                         }
                         command.setLength(0); // Clear buffer
                     }

@@ -78,12 +78,12 @@ public class TitleQueries extends QueryHandler {
                      "ORDER BY t.startYear DESC, t.primaryTitle";
         
         try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            pstmt.setString(1, "%" + actorName + "%");
+            pstmt.setString(1, "%" + actorName + "%");  // wild card search
             try (ResultSet rs = pstmt.executeQuery()) {
                 formatter.displayResultsWithPagination(rs, 10);
             }
         } catch (SQLException e) {
-            System.out.println("don't do sql injection");
+            System.out.println("[ERROR DETECTED (TitleQueries file)]");
             throw e;
         }
     }
@@ -115,7 +115,7 @@ public class TitleQueries extends QueryHandler {
                 formatter.displayResultsWithPagination(rs, 10);
             }
         } catch (SQLException e) {
-            System.out.println("don't do sql injection");
+            System.out.println("[ERROR DETECTED (TitleQueries file)]");
             throw e;
         }
     }
@@ -145,7 +145,7 @@ public class TitleQueries extends QueryHandler {
                 formatter.displayResultsWithPagination(rs, 10);
             }
         } catch (SQLException e) {
-            System.out.println("don't do sql injection");
+            System.out.println("[ERROR DETECTED (TitleQueries file)]");
             throw e;
         }
     }
@@ -178,7 +178,7 @@ public class TitleQueries extends QueryHandler {
                 formatter.displayResultsWithPagination(rs, 10);
             }
         } catch (SQLException e) {
-            System.out.println("don't do sql injection");
+            System.out.println("[ERROR DETECTED (TitleQueries file)]");
             throw e;
         }
     }
@@ -210,7 +210,7 @@ public class TitleQueries extends QueryHandler {
                 formatter.displayResultsWithPagination(rs, 10);
             }
         } catch (SQLException e) {
-            System.out.println("don't do sql injection");
+            System.out.println("[ERROR DETECTED (TitleQueries file)]");
             throw e;
         }
     }
@@ -254,7 +254,7 @@ public class TitleQueries extends QueryHandler {
                 formatter.displayResultsWithPagination(rs, 10);
             }
         } catch (SQLException e) {
-            System.out.println("don't do sql injection");
+            System.out.println("[ERROR DETECTED (TitleQueries file)]");
             throw e;
         }
     }
@@ -286,7 +286,7 @@ public class TitleQueries extends QueryHandler {
                 formatter.displayResultsWithPagination(rs, 10);
             }
         } catch (SQLException e) {
-            System.out.println("don't do sql injection");
+            System.out.println("[ERROR DETECTED (TitleQueries file)]");
             throw e;
         }
     }
@@ -314,7 +314,7 @@ public class TitleQueries extends QueryHandler {
              ResultSet rs = pstmt.executeQuery()) {
             formatter.displayResultsWithPagination(rs, 10);
         } catch (SQLException e) {
-            System.out.println("don't do sql injection");
+            System.out.println("[ERROR DETECTED (TitleQueries file)]");
             throw e;
         }
     }
@@ -351,7 +351,7 @@ public class TitleQueries extends QueryHandler {
                 formatter.displayResultsWithPagination(rs, 10);
             }
         } catch (SQLException e) {
-            System.out.println("don't do sql injection");
+            System.out.println("[ERROR DETECTED (TitleQueries file)]");
             throw e;
         }
     }
@@ -377,7 +377,7 @@ public class TitleQueries extends QueryHandler {
              ResultSet rs = pstmt.executeQuery()) {
             formatter.displayResultsWithPagination(rs, 10);
         } catch (SQLException e) {
-            System.out.println("don't do sql injection");
+            System.out.println("[ERROR DETECTED (TitleQueries file)]");
             throw e;
         }
     }
@@ -402,7 +402,7 @@ public class TitleQueries extends QueryHandler {
              ResultSet rs = pstmt.executeQuery()) {
             formatter.displayResultsWithPagination(rs, 10);
         } catch (SQLException e) {
-            System.out.println("don't do sql injection");
+            System.out.println("[ERROR DETECTED (TitleQueries file)]");
             throw e;
         }
     }
@@ -439,7 +439,7 @@ public class TitleQueries extends QueryHandler {
                 formatter.displayResultsWithPagination(rs, 10);
             }
         } catch (SQLException e) {
-            System.out.println("don't do sql injection");
+            System.out.println("[ERROR DETECTED (TitleQueries file)]");
             throw e;
         }
     }

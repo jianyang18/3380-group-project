@@ -10,8 +10,8 @@ public class StatisticsDisplay {
     
     public static void showStatistics(Connection conn) {
         System.out.println("\n+----------------------------------------------------------+");
-        System.out.println("|                    Database Statistics                   |");
-        System.out.println("+----------------------------------------------------------+");
+        System.out.println("|                    Database Statistics                     |");
+        System.out.println("+------------------------------------------------------------+");
         
         String[][] queries = new String[][] {
             {"SELECT COUNT(*) AS count FROM Title", "Total Titles", "%-43d"},
@@ -29,7 +29,7 @@ public class StatisticsDisplay {
                         System.out.printf("| " + query[1] + ": " + query[2] + " |\n", rs.getInt("count"));
                     }
                 } catch (SQLException e) {
-                    System.out.println("don't do sql injection");
+                    System.out.println("[ERROR DETECTED (StatsDisplay file)]");
                     throw e;
                 }
             }

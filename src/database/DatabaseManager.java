@@ -76,9 +76,9 @@ public class DatabaseManager {
      */
     public void wipeAllData() throws SQLException {
         System.out.println("\n+----------------------------------------------------------------+");
-        System.out.println("| WARNING: This will delete ALL data from the database!         |");
-        System.out.println("| This operation CANNOT be undone.                              |");
-        System.out.println("+----------------------------------------------------------------+");
+        System.out.println("| WARNING: This will delete ALL data from the database!            |");
+        System.out.println("| This operation CANNOT be undone.                                 |");
+        System.out.println("+------------------------------------------------------------------+");
         System.out.print("Are you sure you want to continue? (yes/no): ");
         
         String confirmation = scanner.nextLine().trim().toLowerCase();
@@ -88,6 +88,7 @@ public class DatabaseManager {
             return;
         }
         
+        // double safety feature - deleting the entire db is a pretty big move, MAKES our db more robust to human error
         System.out.print("Type 'DELETE ALL DATA' to confirm: ");
         String finalConfirmation = scanner.nextLine().trim();
         
@@ -98,7 +99,7 @@ public class DatabaseManager {
         
         System.out.println("\nDeleting all data from database...");
         
-        // Deletion order is child tables first to satisfy FK constraints on SQL Server
+        // ORDER MATTERS!!! (Deletion order is child tables first to satisfy FK constraints on SQL Server)
         String[] tables = {
             "Rating",
             "PlayedIn",
@@ -114,6 +115,7 @@ public class DatabaseManager {
         };
         
         int tablesCleared = 0;
+        // uses a loop to clear all tables
         for (String table : tables) {
             String sql = "DELETE FROM " + table;
             try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
@@ -121,7 +123,7 @@ public class DatabaseManager {
                 tablesCleared++;
                 System.out.println("  - Cleared table: " + table);
             } catch (SQLException e) {
-                System.out.println("don't do sql injection");
+                System.out.println("[ERROR DETECTED, Please check code (inside DBManager file)!]");
                 System.out.println("  - Warning: Could not clear " + table + " (" + e.getMessage() + ")");
             }
         }
@@ -136,9 +138,9 @@ public class DatabaseManager {
      */
     public void resetDatabase() throws SQLException {
         System.out.println("\n+----------------------------------------------------------------+");
-        System.out.println("| This will delete all current data and restore the database    |");
-        System.out.println("| to its original populated state.                              |");
-        System.out.println("+----------------------------------------------------------------+");
+        System.out.println("| This will delete all current data and restore the database       |");
+        System.out.println("| to its original populated state.                                 |");
+        System.out.println("+------------------------------------------------------------------+");
         System.out.print("Continue with database reset? (yes/no): ");
         
         String confirmation = scanner.nextLine().trim().toLowerCase();
@@ -156,6 +158,7 @@ public class DatabaseManager {
             "AlternativeTitle", "Title", "Character", "Person", "Genre", "Profession"
         };
         
+        // need to DROP(not delete) all tables then re-build!!
         dropTablesInAnySchema(tables);
         
         System.out.println("  - Existing tables dropped (where present)");
@@ -255,7 +258,7 @@ public class DatabaseManager {
     }
 
     /**
-     * Print a prominent notice about population duration
+     * Print a msg to let user know how long it roughly takes
      */
     private void printDurationNotice() {
         String[] lines = {

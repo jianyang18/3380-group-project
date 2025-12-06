@@ -26,6 +26,8 @@ public class ResultFormatter {
     
     // ============================================================================
     // TABLE FORMAT WITH PAGINATION
+    // This technique required us to do a bit of online research of "how to handle large query result"
+    // , but we've learned how to do it pretty well now
     // ============================================================================
     
     /**
@@ -35,7 +37,7 @@ public class ResultFormatter {
      */
     public void displayResultsWithPagination(ResultSet rs, int pageSize) throws SQLException {
         if (pageSize <= 0) {
-            pageSize = DEFAULT_PAGE_SIZE;
+            pageSize = DEFAULT_PAGE_SIZE; 
         }
         
         ResultSetMetaData metadata = rs.getMetaData();
