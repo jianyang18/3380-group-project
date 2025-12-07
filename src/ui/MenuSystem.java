@@ -86,7 +86,7 @@ public class MenuSystem {
         System.out.println("| 6. Search Titles by Year Range                                 |");
         System.out.println("+----------------------------------------------------------------+");
         System.out.println("| COMPLEX QUERIES                                                |");
-        System.out.println("| 10. Hidden Gems vs Blockbusters                                |");
+        System.out.println("| 10. Explore Hidden Gems                                        |");
         System.out.println("| 11. Regional Reach vs Ratings & Popularity                     |");
         System.out.println("| 12. Genre Rating Trends by Decade                              |");
         System.out.println("| 13. TV Shows with Most Consistent Ratings                      |");

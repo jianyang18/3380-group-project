@@ -263,7 +263,7 @@ public class TitleQueries extends QueryHandler {
     
     // Query 10: Find hidden gems (high rating, low votes) vs blockbusters (high votes)
     private void hiddenGemsVsBlockbusters() throws SQLException {
-        QueryUtils.printQuerySelection(10, "Hidden Gems vs Blockbusters");
+        QueryUtils.printQuerySelection(10, "Explore Hidden Gems");
         System.out.print("Enter minimum rating for hidden gems (e.g., 8.0): ");
         double minRating = Double.parseDouble(scanner.nextLine().trim());
         
